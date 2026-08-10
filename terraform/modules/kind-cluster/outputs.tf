@@ -1,9 +1,12 @@
 output "cluster_name" {
-  description = "Name of the Kind cluster."
-  value       = kind_cluster.this.name
+  value = kind_cluster.this.name
 }
 
 output "kubeconfig_context" {
-  description = "Kubectl context for the Kind cluster."
-  value       = "kind-${kind_cluster.this.name}"
+  value = "kind-${kind_cluster.this.name}"
+}
+
+output "kubeconfig_path" {
+  description = "Path to the kubeconfig generated for the Kind cluster"
+  value       = kind_cluster.this.kubeconfig_path
 }
