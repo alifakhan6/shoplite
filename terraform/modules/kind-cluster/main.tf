@@ -7,7 +7,8 @@ terraform {
 }
 
 resource "kind_cluster" "this" {
-  name = var.cluster_name
+  name           = var.cluster_name
+  wait_for_ready = true
 
   kind_config {
     kind        = "Cluster"
