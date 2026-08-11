@@ -39,3 +39,41 @@ would add authentication, authorization, schema migrations, structured
 observability, dead-letter handling, idempotent message processing, and a
 transactional outbox so an order and its event cannot become inconsistent.
 
+
+## Kubernetes-specific decisions
+
+### Why is `01-secret.yaml` committed in plain text?
+For this learning assignment, the Secret uses the same throwaway development
+credentials already committed in `.env.example`. In a real deployment this
+would be wrong — secrets belong in a manager like AWS Secrets Manager, Vault,
+or Sealed Secrets, injected at deploy time, never in git history. Kept as-is
+here for simplicity and transparency about the trade-off, rather than hiding
+it behind a `.gitignore` entry that would make the manifests incomplete on
+their own.
+
+### Why two Ingress resources instead of one?
+`shoplite-ingress` (API) needs `nginx.ingress.kubernetes.io/rewrite-target`
+with regex capture groups to strip the `/api` prefix before forwarding to each
+service. The frontend's routes (`/` and `/static`) need no rewriting at all —
+mixing the two in one Ingress object would apply the same rewrite annotation
+to every path, breaking the frontend routes. Splitting them keeps each
+Ingress's behavior simple and correct rather than fighting one annotation set
+against two different needs.
+
+### Why `strategy: Recreate` on `catalog-db` but not the other databases?
+During initial deployment, a rolling update briefly ran two MongoDB pods
+against the same PersistentVolumeClaim, and the second `mongod` process
+refused to start because the data directory's lock file was already held by
+the first. `Recreate` forces the old pod to fully terminate before a
+replacement starts, which is the correct behavior for any single-replica
+workload backed by a ReadWriteOnce volume. The other databases hit the same
+class of risk in theory; `catalog-db` is where it actually surfaced during
+testing.
+
+### Why liveness on `/healthz` but readiness on `/readyz`?
+Liveness answers "is the process alive at all" and intentionally avoids
+checking the database — if it did, a slow database would cause Kubernetes to
+kill and restart an otherwise-healthy application pod, making a database
+problem worse instead of better. Readiness checks the database connection,
+since a pod that can't reach its database shouldn't receive traffic, but
+should stay running rather than restart.
