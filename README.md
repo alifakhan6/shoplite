@@ -223,13 +223,39 @@ manifests live under `k8s/` and are applied in dependency order.
 ```bash
 cd terraform && terraform init && terraform apply
 cd ..
+```
+
+Build the application images and load them into the `kind` cluster (kind
+nodes don't share your local Docker image cache, so this step is required
+even though the images build successfully):
+
+```bash
+docker compose build
+docker tag shoplite-user-service:latest shoplite/user-service:1.0
+docker tag shoplite-catalog-service:latest shoplite/catalog-service:1.0
+docker tag shoplite-order-service:latest shoplite/order-service:1.0
+docker tag shoplite-notification-service:latest shoplite/notification-service:1.0
+kind load docker-image shoplite/user-service:1.0 --name shoplite
+kind load docker-image shoplite/catalog-service:1.0 --name shoplite
+kind load docker-image shoplite/order-service:1.0 --name shoplite
+kind load docker-image shoplite/notification-service:1.0 --name shoplite
+```
+
+(Requires the [`kind` CLI](https://kind.sigs.k8s.io/docs/user/quick-start/#installation) — the Terraform `tehcyx/kind` provider manages cluster lifecycle but not image loading.)
+
+```bash
 kubectl apply -f k8s/00-namespace.yaml -f k8s/01-secret.yaml -f k8s/02-configmap.yaml
 kubectl apply -f k8s/10-user-db.yaml -f k8s/11-order-db.yaml -f k8s/12-catalog-db.yaml -f k8s/13-notification-db.yaml -f k8s/14-rabbitmq.yaml
 kubectl apply -f k8s/20-user-service.yaml -f k8s/21-catalog-service.yaml -f k8s/22-order-service.yaml -f k8s/23-notification-service.yaml
 kubectl apply -f k8s/30-ingress.yaml -f k8s/31-frontend-ingress.yaml
 ```
 
-Add `127.0.0.1 shoplite.local` to your hosts file, then verify:
+Add `127.0.0.1 shoplite.local` to your hosts file:
+
+- Linux/macOS: `sudo sh -c 'echo "127.0.0.1 shoplite.local" >> /etc/hosts'`
+- Windows (PowerShell, run as Administrator): `notepad C:\Windows\System32\drivers\etc\hosts` and add the line manually
+
+Then verify:
 
 ```bash
 kubectl get pods -n shoplite
@@ -271,6 +297,17 @@ kubectl get pods -n shoplite -l app=order-service -w
 
 All new replicas reached `1/1 Running` within ~12 seconds, with zero
 disruption to the existing pods.
+
+### Teardown
+
+```bash
+cd terraform
+terraform destroy
+```
+
+This removes the `kind` cluster and the ingress controller release entirely.
+Re-running `terraform apply` afterward rebuilds both from scratch (verified:
+`terraform plan` reports no differences after a clean apply).
 
 ### Branch protection
 
@@ -355,6 +392,27 @@ docker compose down --volumes
 ```
 
 Then rebuild with `docker compose up --build`.
+
+### Pods show `ErrImagePull` or `ImagePullBackOff` in Kubernetes
+
+`docker compose build` tags images as `shoplite-<service>:latest`, but the
+Kubernetes manifests expect `shoplite/<service>:1.0`. Retag and load into
+`kind` as shown in the Deploy section above. Confirm the exact image/tag a
+manifest expects with:
+
+```bash
+kubectl get deployment SERVICE_NAME -n shoplite -o jsonpath="{.spec.template.spec.containers[0].image}"
+```
+
+### `ingress-nginx-controller` pod stuck `Pending`
+
+Caused by a scheduling conflict: the controller's `nodeSelector`
+(`ingress-ready=true`) only matches the control-plane node, but the
+control-plane's default taint blocks scheduling there. The Helm release in
+`terraform/modules/ingress-controller/main.tf` includes a toleration for
+`node-role.kubernetes.io/control-plane` to resolve this — confirm with
+`kubectl describe pod -n ingress-nginx -l app.kubernetes.io/component=controller`
+if it recurs.
 
 ## Assignment status
 
