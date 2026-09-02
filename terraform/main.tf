@@ -25,11 +25,14 @@ provider "helm" {
 module "kind_cluster" {
   source = "./modules/kind-cluster"
 
-  cluster_name = "shoplite"
+  cluster_name = var.cluster_name
+  worker_count = var.worker_count
 }
 
 module "ingress_controller" {
   source = "./modules/ingress-controller"
+
+  namespace = var.ingress_namespace
 
   depends_on = [
     module.kind_cluster

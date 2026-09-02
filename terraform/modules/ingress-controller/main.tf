@@ -2,7 +2,7 @@ resource "helm_release" "ingress_nginx" {
   name             = "ingress-nginx"
   repository       = "https://kubernetes.github.io/ingress-nginx"
   chart            = "ingress-nginx"
-  namespace        = "ingress-nginx"
+  namespace        = var.namespace
   create_namespace = true
 
   set {
@@ -29,5 +29,20 @@ resource "helm_release" "ingress_nginx" {
   set {
     name  = "controller.service.type"
     value = "NodePort"
+  }
+
+  set {
+    name  = "controller.tolerations[0].key"
+    value = "node-role.kubernetes.io/control-plane"
+  }
+
+  set {
+    name  = "controller.tolerations[0].operator"
+    value = "Exists"
+  }
+
+  set {
+    name  = "controller.tolerations[0].effect"
+    value = "NoSchedule"
   }
 }
