@@ -33,5 +33,12 @@ resource "kind_cluster" "this" {
         protocol       = "TCP"
       }
     }
+
+    dynamic "node" {
+      for_each = range(var.worker_count)
+      content {
+        role = "worker"
+      }
+    }
   }
 }
