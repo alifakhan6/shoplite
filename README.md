@@ -48,9 +48,19 @@ new orders from being created.
 ## Repository layout
 
 ```text
-shoplite-python-starter/
+shoplite/
 ├── .github/workflows/ci.yml
-├── docs/design-decisions.md
+├── docs/
+│   ├── design-decisions.md
+│   └── branch-protection.png
+├── k8s/                        Namespace, Secret, ConfigMap, databases, services, ingress
+├── terraform/
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   └── modules/
+│       ├── kind-cluster/
+│       └── ingress-controller/
 ├── services/
 │   ├── user-service/          FastAPI + PostgreSQL + browser UI
 │   ├── catalog-service/       FastAPI + MongoDB
@@ -423,7 +433,7 @@ All required components are implemented and deployed:
 - Full Kubernetes application layer (Namespace, Secret, ConfigMap, PVCs,
   Deployments, Services, Ingress) — see "Kubernetes deployment" above
 - Resilience and scaling demonstrations captured
-- 4 pull requests merged into `develop` via CI-gated, branch-protected workflow
+- Multiple feature/fix/docs pull requests merged into develop via a CI-gated, branch-protected workflow
 - Synchronous REST (user/product validation) and asynchronous messaging
   (order → RabbitMQ → notification) both verified end-to-end through the
   Ingress
