@@ -3,3 +3,9 @@ variable "cluster_name" {
   type        = string
   default     = "shoplite"
 }
+
+variable "worker_count" {
+  description = "Number of worker nodes in the Kind cluster."
+  type        = number
+  default     = 1
+}

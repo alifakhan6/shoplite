@@ -6,6 +6,13 @@
 - `develop` collects completed features.
 - Create branches from `develop` using `feature/<short-name>`.
 
+## Branch protection
+
+Both `main` and `develop` are protected on GitHub, requiring pull requests
+and passing status checks before merging:
+
+![Branch protection rules for main and develop](docs/branch-protection.png)
+
 ## Pull requests
 
 1. Keep each pull request focused on one work area.
@@ -24,4 +31,3 @@ Use Conventional Commits:
 
 Never commit `.env`, credentials, Terraform state, IDE files, or generated
 artifacts.
-

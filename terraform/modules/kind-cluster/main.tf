@@ -7,7 +7,8 @@ terraform {
 }
 
 resource "kind_cluster" "this" {
-  name = var.cluster_name
+  name           = var.cluster_name
+  wait_for_ready = true
 
   kind_config {
     kind        = "Cluster"
@@ -30,6 +31,13 @@ resource "kind_cluster" "this" {
         container_port = 443
         host_port      = 443
         protocol       = "TCP"
+      }
+    }
+
+    dynamic "node" {
+      for_each = range(var.worker_count)
+      content {
+        role = "worker"
       }
     }
   }

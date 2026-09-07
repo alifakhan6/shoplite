@@ -6,13 +6,35 @@ terraform {
       source  = "tehcyx/kind"
       version = "~> 0.8"
     }
+
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.17"
+    }
   }
 }
 
 provider "kind" {}
 
+provider "helm" {
+  kubernetes {
+    config_path = module.kind_cluster.kubeconfig_path
+  }
+}
+
 module "kind_cluster" {
   source = "./modules/kind-cluster"
 
-  cluster_name = "shoplite"
+  cluster_name = var.cluster_name
+  worker_count = var.worker_count
+}
+
+module "ingress_controller" {
+  source = "./modules/ingress-controller"
+
+  namespace = var.ingress_namespace
+
+  depends_on = [
+    module.kind_cluster
+  ]
 }
